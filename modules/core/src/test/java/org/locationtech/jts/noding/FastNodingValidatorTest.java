@@ -1,6 +1,7 @@
 package org.locationtech.jts.noding;
 
 import java.util.ArrayList;
+// import org.locationtech.jts.noding.NodedSegmentString; // Not strictly needed due to wildcard import from SegmentStringUtil if it were used, but good for clarity
 import java.util.Collection;
 import java.util.List;
 
@@ -64,7 +65,7 @@ public class FastNodingValidatorTest extends GeometryTestCase {
 
   private void checkValid(String[] inputWKT, boolean isValidExpected) {
     List input = readList(inputWKT);
-    List segStrings = toSegmentStrings(input); 
+    List<NodedSegmentString> segStrings = toSegmentStrings(input); 
     FastNodingValidator fnv = new FastNodingValidator(segStrings);
     boolean isValid = fnv.isValid();
 
@@ -77,7 +78,7 @@ public class FastNodingValidatorTest extends GeometryTestCase {
     Coordinate[] pts = expected.getCoordinates();
     CoordinateList intPtsExpected = new CoordinateList(pts);
     
-    List segStrings = toSegmentStrings(input); 
+    List<NodedSegmentString> segStrings = toSegmentStrings(input); 
     List intPtsActual = FastNodingValidator.computeIntersections(segStrings);
     
     boolean isSameNumberOfIntersections = intPtsExpected.size() == intPtsActual.size();
@@ -97,8 +98,8 @@ public class FastNodingValidatorTest extends GeometryTestCase {
     }
   }
 
-  private static List toSegmentStrings(Collection geoms) {
-    List segStrings = new ArrayList();
+  private static List<NodedSegmentString> toSegmentStrings(Collection geoms) {
+    List<NodedSegmentString> segStrings = new ArrayList<>();
     for (Object geom : geoms) {
       segStrings.addAll(SegmentStringUtil.extractSegmentStrings((Geometry) geom));
     }

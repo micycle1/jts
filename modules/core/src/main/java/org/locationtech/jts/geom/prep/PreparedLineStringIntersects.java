@@ -18,6 +18,7 @@ import org.locationtech.jts.algorithm.PointLocator;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.util.ComponentCoordinateExtracter;
+import org.locationtech.jts.noding.NodedSegmentString;
 import org.locationtech.jts.noding.SegmentStringUtil;
 
 
@@ -69,7 +70,7 @@ class PreparedLineStringIntersects
 		/**
 		 * If any segments intersect, obviously intersects = true
 		 */
-    List lineSegStr = SegmentStringUtil.extractSegmentStrings(geom);
+    List<NodedSegmentString> lineSegStr = SegmentStringUtil.extractSegmentStrings(geom);
     // only request intersection finder if there are segments (ie NOT for point inputs)
     if (lineSegStr.size() > 0) {
   		boolean segsIntersect = prepLine.getIntersectionFinder().intersects(lineSegStr);
