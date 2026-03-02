@@ -17,7 +17,10 @@ import org.locationtech.jts.geom.Coordinate;
  * Contains a pair of points and the distance between them.
  * Provides methods to update with a new point pair with
  * either maximum or minimum distance.
+ * 
+ * @deprecated Replaced by {@link org.locationtech.jts.algorithm.distance.PointPairDistance}
  */
+@Deprecated
 public class PointPairDistance {
 
   private Coordinate[] pt = { new Coordinate(), new Coordinate() };
