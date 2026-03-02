@@ -141,18 +141,18 @@ class CleanCoverage {
   
   private static class CleanArea {
     //TODO: is it any faster to store single polygons explicitly and only create array if needed?
-    List<Polygon> polys = new ArrayList<Polygon>(); 
+    List<Polygon> polys = new ArrayList<Polygon>();
+    private Envelope env = new Envelope();
+    private double area = 0;
     
     public void add(Polygon poly) {
       polys.add(poly);
+      env.expandToInclude(poly.getEnvelopeInternal());
+      area += poly.getArea();
     }
     
     public Envelope getEnvelope() {
-      Envelope env = new Envelope();
-      for (Polygon poly : polys) {
-        env.expandToInclude(poly.getEnvelopeInternal());
-      }
-      return env;
+      return new Envelope(env);
     }
 
     public double getBorderLength(Polygon adjPoly) {
@@ -168,11 +168,6 @@ class CleanCoverage {
     }
 
     public double getArea() {
-      //TODO: cache area?
-      double area = 0;
-      for (Polygon poly : polys) {
-        area += poly.getArea();
-      }
       return area;
     }
 
