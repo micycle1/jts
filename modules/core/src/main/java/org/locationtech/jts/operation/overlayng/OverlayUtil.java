@@ -31,7 +31,7 @@ import org.locationtech.jts.util.Assert;
  * @author mdavis
  *
  */
-class OverlayUtil {
+public class OverlayUtil {
 
   /**
    * A null-handling wrapper for {@link PrecisionModel#isFloating()}
@@ -39,7 +39,7 @@ class OverlayUtil {
    * @param pm
    * @return
    */
-  static boolean isFloating(PrecisionModel pm) {
+  public static boolean isFloating(PrecisionModel pm) {
     if (pm == null) return true;
     return pm.isFloating();
   }
@@ -64,7 +64,7 @@ class OverlayUtil {
    * @param pm the precision model being used
    * @return an envelope for clipping and line limiting, or null if no clipping is performed
    */
-  static Envelope clippingEnvelope(int opCode, InputGeometry inputGeom, PrecisionModel pm) {   
+  public static Envelope clippingEnvelope(int opCode, InputGeometry inputGeom, PrecisionModel pm) {   
     Envelope resultEnv = resultEnvelope(opCode, inputGeom, pm);
     if (resultEnv == null) 
       return null;
@@ -160,7 +160,7 @@ class OverlayUtil {
    * @param inputGeom the input geometries
    * @return true if the overlay result is determined to be empty
    */
-  static boolean isEmptyResult(int opCode, Geometry a, Geometry b, PrecisionModel pm) {
+  public static boolean isEmptyResult(int opCode, Geometry a, Geometry b, PrecisionModel pm) {
     switch (opCode) {
     case OverlayNG.INTERSECTION:
       if (isEnvDisjoint(a, b, pm)) 
@@ -230,7 +230,7 @@ class OverlayUtil {
    * @param geomFact the geometry factory being used for the operation
    * @return an empty atomic geometry of the appropriate dimension
    */
-  static Geometry createEmptyResult(int dim, GeometryFactory geomFact)
+  public static Geometry createEmptyResult(int dim, GeometryFactory geomFact)
   {
     Geometry result = null;
     switch (dim) {
@@ -308,7 +308,7 @@ class OverlayUtil {
    * @param geometryFactory the geometry factory to use
    * @return a geometry structured according to the overlay result semantics
    */
-  static Geometry createResultGeometry(List<Polygon> resultPolyList, List<LineString> resultLineList, List<Point> resultPointList, GeometryFactory geometryFactory) {
+  public static Geometry createResultGeometry(List<Polygon> resultPolyList, List<LineString> resultLineList, List<Point> resultPointList, GeometryFactory geometryFactory) {
     List<Geometry> geomList = new ArrayList<Geometry>();
     
     // TODO: for mixed dimension, return collection of Multigeom for each dimension (breaking change)

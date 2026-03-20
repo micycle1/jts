@@ -26,7 +26,7 @@ import org.locationtech.jts.geom.Dimension;
  * @author mdavis
  *
  */
-class EdgeSourceInfo {
+public class EdgeSourceInfo {
   private int index;
   private int dim = -999;
   private boolean isHole = false;

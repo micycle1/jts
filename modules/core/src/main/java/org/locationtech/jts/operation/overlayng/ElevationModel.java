@@ -43,7 +43,7 @@ import org.locationtech.jts.math.MathUtil;
  * @author Martin Davis
  *
  */
-class ElevationModel {
+public class ElevationModel {
   
   private static final int DEFAULT_CELL_NUM = 3;
 

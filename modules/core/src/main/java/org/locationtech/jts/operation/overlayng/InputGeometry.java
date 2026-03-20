@@ -26,7 +26,7 @@ import org.locationtech.jts.geom.Location;
  * @author Martin Davis
  *
  */
-class InputGeometry {
+public class InputGeometry {
   
   private Geometry[] geom = new Geometry[2];
   private PointOnGeometryLocator ptLocatorA;

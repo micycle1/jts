@@ -83,7 +83,7 @@ import org.locationtech.jts.geom.Position;
  * @author Martin Davis
  *
  */
-class OverlayLabel {
+public class OverlayLabel {
   
   private static final char SYM_UNKNOWN = '#';
   private static final char SYM_BOUNDARY = 'B';
