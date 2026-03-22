@@ -17,7 +17,22 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.TopologyException;
 
 /**
- * Unions a valid polygonal coverage in an efficient way.
+ * Unions a valid coverage of polygons or lines in an efficient way.
+ * <p>
+ * A <b>polygonal coverage</b> is a collection of {@link org.locationtech.jts.geom.Polygon}s
+ * which satisfy the following conditions:
+ * <ol>
+ * <li><b>Vector-clean</b> - Line segments within the collection
+ * must either be identical or intersect only at endpoints.
+ * <li><b>Non-overlapping</b> - No two polygons
+ * may overlap. Equivalently, polygons must be interior-disjoint.
+ * </ol>
+ * <p>
+ * A <b>linear coverage</b> is a collection of {@link org.locationtech.jts.geom.LineString}s
+ * which satisfies the <b>Vector-clean</b> condition.
+ * Note that this does not require the LineStrings to be fully noded
+ * - i.e. they may contain coincident linework.
+ * Coincident line segments are dissolved by the union.
  * <p>
  * No checking is done to determine whether the input is a valid coverage.
  * If the input is not a valid coverage 
@@ -47,5 +62,20 @@ public class CoverageUnion {
     GeometryFactory geomFact = coverage[0].getFactory();
     GeometryCollection geoms = geomFact.createGeometryCollection(coverage);
     return org.locationtech.jts.operation.overlayng.CoverageUnion.union(geoms);
+  }
+
+  /**
+   * Unions a valid polygonal coverage or linear network.
+   *
+   * @param coverage a coverage of polygons or lines
+   * @return the union of the coverage
+   *
+   * @throws TopologyException in some cases if the coverage is invalid
+   */
+  public static Geometry union(Geometry coverage) {
+    return org.locationtech.jts.operation.overlayng.CoverageUnion.union(coverage);
+  }
+
+  private CoverageUnion() {
   }
 }
