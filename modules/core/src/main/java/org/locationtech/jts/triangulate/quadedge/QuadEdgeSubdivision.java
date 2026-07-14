@@ -60,8 +60,7 @@ import org.locationtech.jts.io.WKTWriter;
  * @author Martin Davis
  */
 public class QuadEdgeSubdivision {
-
-  /**
+	/**
 	 * Gets the edges for the triangle to the left of the given {@link QuadEdge}.
 	 * 
 	 * @param startQE
@@ -79,8 +78,6 @@ public class QuadEdgeSubdivision {
 	}
 
 	private final static double EDGE_COINCIDENCE_TOL_FACTOR = 1000;
-	
-  private static final double FRAME_SIZE_FACTOR = 10.0;
 
 	// debugging only - preserve current subdiv statically
 	// private static QuadEdgeSubdivision currentSubdiv;
@@ -117,29 +114,22 @@ public class QuadEdgeSubdivision {
 		locator = new LastFoundQuadEdgeLocator(this);
 	}
 
-	/**
-	 * Creates a triangular frame which contains the vertices to be triangulated.
-	 * <p>
-	 * The frame must be large enough so that its vertices are not in the circumcircle
-	 * of any constructed triangle.  
-	 * This ensures that the vertices of the frame do not prevent the convex hull
-	 * of the input vertices from forming edges of the triangulation.
-	 * This is done by using a heuristic size 
-	 * of the frame.  However, it may be that this is not fully robust, 
-	 * for input points which contain very narry triangles.
-	 * 
-	 * @param env the envelope of the input points
-	 */
 	private void createFrame(Envelope env)
 	{
 		double deltaX = env.getWidth();
 		double deltaY = env.getHeight();
-		double frameSize = Math.max(deltaX, deltaY) * FRAME_SIZE_FACTOR;
+		double offset = 0.0;
+		if (deltaX > deltaY) {
+			offset = deltaX * 10.0;
+		} else {
+			offset = deltaY * 10.0;
+		}
 
-		frameVertex[0] = new Vertex((env.getMaxX() + env.getMinX()) / 2.0, 
-		                              env.getMaxY()	+ frameSize);
-		frameVertex[1] = new Vertex(env.getMinX() - frameSize, env.getMinY() - frameSize);
-		frameVertex[2] = new Vertex(env.getMaxX() + frameSize, env.getMinY() - frameSize);
+		frameVertex[0] = new Vertex((env.getMaxX() + env.getMinX()) / 2.0, env
+				.getMaxY()
+				+ offset);
+		frameVertex[1] = new Vertex(env.getMinX() - offset, env.getMinY() - offset);
+		frameVertex[2] = new Vertex(env.getMaxX() + offset, env.getMinY() - offset);
 
 		frameEnv = new Envelope(frameVertex[0].getCoordinate(), frameVertex[1]
 				.getCoordinate());
@@ -289,8 +279,12 @@ public class QuadEdgeSubdivision {
 			 * since the orientation predicates may experience precision failures.
 			 */
 			if (iter > maxIter) {
-			  //System.out.println(getTriangles(new GeometryFactory()));
-			  throw new LocateFailureException(e.toLineSegment()); 
+				throw new LocateFailureException(e.toLineSegment());
+				// String msg = "Locate failed to converge (at edge: " + e + ").
+				// Possible causes include invalid Subdivision topology or very close
+				// sites";
+				// System.err.println(msg);
+				// dumpTriangles();
 			}
 
 			if ((v.equals(e.orig())) || (v.equals(e.dest()))) {
@@ -614,24 +608,6 @@ public class QuadEdgeSubdivision {
 	}
   
   /**
-   * Gets the edges which touch frame vertices. The returned edges are oriented so
-   * that their origin is a frame vertex.
-   * 
-   * @return the edges which touch the frame
-   */
-  public List<QuadEdge> getFrameEdges() {
-    List<QuadEdge> edges = getPrimaryEdges(true);
-    List<QuadEdge> frameEdges = new ArrayList<QuadEdge>();
-    for (QuadEdge e : edges) {
-      if (isFrameEdge(e)) {
-        QuadEdge fe = isFrameVertex(e.orig()) ? e : e.sym();
-        frameEdges.add(fe);
-      }
-    }
-    return frameEdges;
-  }
-	
-  /**
    * A TriangleVisitor which computes and sets the 
    * circumcentre as the origin of the dual 
    * edges originating in each triangle.
@@ -751,7 +727,7 @@ public class QuadEdgeSubdivision {
 		private List triList = new ArrayList();
 
 		public void visit(QuadEdge[] triEdges) {
-			triList.add(new QuadEdge[]{triEdges[0], triEdges[1], triEdges[2]});
+			triList.add(triEdges);
 		}
 
 		public List getTriangleEdges() {
@@ -882,25 +858,6 @@ public class QuadEdgeSubdivision {
 	}
 
 	/**
-   * Gets the geometry for the triangles in a triangulated subdivision as a {@link GeometryCollection}
-   * of triangular {@link Polygon}s, optionally including the frame triangles.
-   * 
- 	 * @param includeFrame true if the frame triangles should be included
- 	 * @param geomFact the GeometryFactory to use
-   * @return a GeometryCollection of triangular Polygons
-	 */
-  public Geometry getTriangles(boolean includeFrame, GeometryFactory geomFact) {
-    List triPtsList = getTriangleCoordinates(includeFrame);
-    Polygon[] tris = new Polygon[triPtsList.size()];
-    int i = 0;
-    for (Iterator it = triPtsList.iterator(); it.hasNext();) {
-      Coordinate[] triPt = (Coordinate[]) it.next();
-      tris[i++] = geomFact.createPolygon(geomFact.createLinearRing(triPt));
-    }
-    return geomFact.createGeometryCollection(tris);
-  }
-	 
-	/**
 	 * Gets the cells in the Voronoi diagram for this triangulation.
 	 * The cells are returned as a {@link GeometryCollection} of {@link Polygon}s
    * <p>
@@ -942,7 +899,11 @@ public class QuadEdgeSubdivision {
     Collection edges = getVertexUniqueEdges(false);
     for (Iterator i = edges.iterator(); i.hasNext(); ) {
     	QuadEdge qe = (QuadEdge) i.next();
-      cells.add(getVoronoiCellPolygon(qe, geomFact));
+      Polygon cell = getVoronoiCellPolygon(qe, geomFact);
+      // safely omit degenerate/empty cells produced by the per-site walk (e.g. insufficient distinct circumcentres)
+      if (cell != null && !cell.isEmpty()) {
+        cells.add(cell);
+      }
     }
     return cells;
   }
@@ -977,74 +938,40 @@ public class QuadEdgeSubdivision {
     coordList.addAll(cellPts, false);
     coordList.closeRing();
     
-    if (coordList.size() < 4) {
-      //System.out.println(coordList);
-      coordList.add(coordList.get(coordList.size()-1), true);
+    Coordinate[] pts = coordList.toCoordinateArray();
+    // Safely omit degenerate cells (too few points after walk, or would produce invalid/degenerate ring
+    // with consecutive repeats). This prevents "Invalid number of points..." and keeps diagram.isValid() true.
+    // The surrounding-vertex walk + circumcentre logic is left intact; callers in getVoronoiCellPolygons filter.
+    if (pts.length < 4 || !isValidRingCandidate(pts)) {
+      Polygon empty = geomFact.createPolygon();
+      Vertex v = startQE.orig();
+      empty.setUserData(v.getCoordinate());
+      return empty;
     }
     
-    Coordinate[] pts = coordList.toCoordinateArray();
     Polygon cellPoly = geomFact.createPolygon(geomFact.createLinearRing(pts));
     
     Vertex v = startQE.orig();
     cellPoly.setUserData(v.getCoordinate());
     return cellPoly;
   }
-  
-  /**
-   * Tests whether a subdivision is a valid Delaunay Triangulation.
-   * This is the case iff every edge is locally Delaunay, meaning that
-   * the apex of one adjacent triangle is not inside the circumcircle 
-   * of the other adjacent triangle.
-   * 
-   * @return true if the subdivision is Delaunay
-   */
-  public boolean isDelaunay() {
-    List<QuadEdge> edges = getPrimaryEdges(true);
-    for (QuadEdge e : edges) {
-      Vertex a0 = e.oPrev().dest();
-      Vertex a1 = e.oNext().dest();
-      boolean isDelaunay = ! a1.isInCircle(e.orig(), a0, e.dest());
-      if (! isDelaunay) {
-        /*
-        System.out.println(WKTWriter.toLineString(new Coordinate[] {
-            e.orig().getCoordinate(), a0.getCoordinate(), e.dest().getCoordinate()
-        }));
-        */
-        return false;
-      }
-    }
-    return true;
-  }
-  
-  /**
-   * Tests whether the frame edges are Delaunay
-   * @return true if the frame edges are Delaunay
-   */
-  /*
-  public boolean isFrameDelaunay() {
-    List<QuadEdge> edges = getFrameEdges();
-    for (QuadEdge e : edges) {
-      Vertex a0 = e.oPrev().dest();
-      Vertex a1 = e.oNext().dest();
-      boolean isDelaunay = ! a1.isInCircle(e.orig(), a0, e.dest());
-      if (! isDelaunay) {
 
-        return false;
+  /**
+   * Returns true if the coordinate array (after closeRing) has enough distinct points
+   * to form a valid non-degenerate LinearRing (>=4 pts with at least 3 distinct positions).
+   */
+  private static boolean isValidRingCandidate(Coordinate[] pts) {
+    if (pts.length < 4) return false;
+    int distinct = 0;
+    Coordinate prev = null;
+    for (int i = 0; i < pts.length; i++) {
+      Coordinate c = pts[i];
+      if (prev == null || !c.equals2D(prev)) {
+        distinct++;
       }
+      prev = c;
     }
-    return true;
+    return distinct >= 3;  // need at least triangle for a real cell
   }
   
-  public void makeFrameDelaunay() {
-    List<QuadEdge> edges = getFrameEdges();
-    for (QuadEdge e : edges) {
-      Vertex a0 = e.oPrev().dest();
-      Vertex a1 = e.oNext().dest();
-      boolean isDelaunay = ! a1.isInCircle(e.orig(), a0, e.dest());
-      if (! isDelaunay) {
-        QuadEdge.swap(e);
-      }
-    }
-  }
-  */
 }
