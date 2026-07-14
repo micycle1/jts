@@ -13,15 +13,17 @@ package org.locationtech.jts.coverage;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.locationtech.jts.geom.CoordinateSequence;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.index.quadtree.Quadtree;
-import org.locationtech.jts.operation.overlayng.OverlayNG;
-import org.locationtech.jts.operation.overlayng.OverlayNGRobust;
 import org.locationtech.jts.operation.relateng.IntersectionMatrixPattern;
 import org.locationtech.jts.operation.relateng.RelateNG;
 import org.locationtech.jts.util.IntArrayList;
@@ -141,38 +143,60 @@ class CleanCoverage {
   
   private static class CleanArea {
     //TODO: is it any faster to store single polygons explicitly and only create array if needed?
-    List<Polygon> polys = new ArrayList<Polygon>(); 
+    List<Polygon> polys = new ArrayList<Polygon>();
+    private Envelope env = new Envelope();
+    private double area = 0;
+    private Map<LineSegment, Double> edgeLen = new HashMap<LineSegment, Double>();
     
     public void add(Polygon poly) {
       polys.add(poly);
+      env.expandToInclude(poly.getEnvelopeInternal());
+      area += poly.getArea();
+      addEdgeLength(poly.getExteriorRing().getCoordinateSequence());
+      for (int i = 0; i < poly.getNumInteriorRing(); i++) {
+        addEdgeLength(poly.getInteriorRingN(i).getCoordinateSequence());
+      }
     }
     
     public Envelope getEnvelope() {
-      Envelope env = new Envelope();
-      for (Polygon poly : polys) {
-        env.expandToInclude(poly.getEnvelopeInternal());
-      }
-      return env;
+      return new Envelope(env);
     }
 
     public double getBorderLength(Polygon adjPoly) {
-      //TODO: find optimal way of computing border len given a coverage
-      double len = 0;
-      for (Polygon poly : polys) {
-        //TODO: find longest connected border len
-        Geometry border = OverlayNGRobust.overlay(poly, adjPoly, OverlayNG.INTERSECTION);
-        double borderLen = border.getLength();
-        len += borderLen;
+      double len = edgeLength(adjPoly.getExteriorRing().getCoordinateSequence());
+      for (int i = 0; i < adjPoly.getNumInteriorRing(); i++) {
+        len += edgeLength(adjPoly.getInteriorRingN(i).getCoordinateSequence());
       }
       return len;
     }
+    
+    private void addEdgeLength(CoordinateSequence seq) {
+      for (int i = 0; i < seq.size() - 1; i++) {
+        LineSegment seg = createSegment(seq, i);
+        Double segLen = edgeLen.get(seg);
+        double len = seg.getLength();
+        edgeLen.put(seg, segLen == null ? len : segLen + len);
+      }
+    }
+    
+    private double edgeLength(CoordinateSequence seq) {
+      double len = 0;
+      for (int i = 0; i < seq.size() - 1; i++) {
+        Double segLen = edgeLen.get(createSegment(seq, i));
+        if (segLen != null) {
+          len += segLen;
+        }
+      }
+      return len;
+    }
+    
+    private static LineSegment createSegment(CoordinateSequence seq, int i) {
+      LineSegment seg = new LineSegment(seq.getCoordinate(i), seq.getCoordinate(i + 1));
+      seg.normalize();
+      return seg;
+    }
 
     public double getArea() {
-      //TODO: cache area?
-      double area = 0;
-      for (Polygon poly : polys) {
-        area += poly.getArea();
-      }
       return area;
     }
 
